@@ -1,9 +1,31 @@
 import streamlit as st
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import os
+import json
 import pandas as pd
 import re
 from datetime import datetime
+from dotenv import load_dotenv
+from oauth2client.service_account import ServiceAccountCredentials
+
+# ────────────────────────────────────────
+# Load Credentials from Env or .env
+# ────────────────────────────────────────
+load_dotenv()  # For local development
+
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+json_str = os.getenv("GCP_CREDENTIALS_JSON")
+if not json_str:
+    st.error("❌ Missing Google credentials. Please set GCP_CREDENTIALS_JSON.")
+    st.stop()
+
+try:
+    creds_dict = json.loads(json_str)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+except Exception as e:
+    st.error(f"❌ Failed to load credentials: {e}")
+    st.stop()
 
 # ────────────────────────────────────────
 # Google Sheets Config
@@ -13,8 +35,6 @@ WORKSHEET = "Slides"
 
 @st.cache_resource
 def get_gsheet():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("gcp_credentials.json", scope)
     client = gspread.authorize(creds)
     return client.open(SHEET_NAME).worksheet(WORKSHEET)
 
@@ -50,7 +70,7 @@ with st.container():
     st.markdown("""
     Use the form below to add a new presentation to the archive.  
     <span style='font-size: 0.85rem;'>
-    <a href="/Instructions" target="_self" style='color: #c3a8fa; text-decoration: none;'>
+    📎 <a href="/Instructions" target="_self" style='color: #c3a8fa; text-decoration: none;'>
     How to get your Google Slides embed link</a>
     </span>
     """, unsafe_allow_html=True)
